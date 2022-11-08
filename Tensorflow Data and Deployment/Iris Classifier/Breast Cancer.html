@@ -1,0 +1,63 @@
+<html>
+<head></head>
+<script src = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<script lang="js">
+    async function run(){
+        const train_csvUrl = "/Users/surendrasrinivas/Downloads/B.TECH/SEMESTER 5/MISC Sem_05/100/tensorflow-2-public-main-2/C1_Browser-based-TF-JS/W1/assignment/data/wdbc-train.csv";
+        const trainingData = tf.data.csv(train_csvUrl, {
+            columnConfigs : {
+                diagnosis : {
+                    isLabel : true
+                }
+            }
+        });
+
+        const numOfFeatures = (await trainingData.columnNames()).length - 1;
+        const numOfSamples = 455;
+
+        const train_convertedData = trainingData.map(({xs, ys}) =>{
+/*            const labels = [
+                ys.diagnosis == 1? "malignant": "benign",
+            ]*/
+            return { xs : Object.values(xs), ys: Object.values(ys)}
+        }
+        ).batch(10);
+
+        const test_csvUrl = "/data/wdbc-test.csv";
+        const testingData = tf.data.csv(test_csvUrl, {
+            columnConfigs : {
+                diagnosis : {
+                    isLabel : true
+                }
+            }
+        });
+
+        const test_convertedData = testingData.map(({xs, ys}) =>{
+            return { xs : Object.values(xs), ys : Object.vlaues(ys)}
+        }).batch(10);
+        
+        const model = tf.sequential();
+        model.add(tf.layers.dense({units : 5, inputShape : [numOfFeatures], activation : "relu"}));
+        model.add(tf.layers.dense({units : 1, activation : "sigmoid"}));
+        model.compile({
+            loss : "binaryCrossentropy",
+            optimizer : tf.train.rmsprop(0.06),
+            metrics : ["accuracy"]
+        });
+        await model.fitDataset(
+            train_convertedData, {
+                epochs : 100,
+                validatinData : test_convertedData,
+                callbacks : {
+                    onEpochEnd : async(epoch, logs) => {
+                        console.log("Epoch : "+epoch+" Loss :"+logs.loss+" Accuracy : "+logs.acc);
+                    }
+                }
+                }
+        );
+        await model.save('downloads://my_model');
+    }
+    run();
+</script>
+<body></body>
+</html>
